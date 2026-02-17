@@ -34,6 +34,20 @@ app.post("/add-data", async (req, res) => {
   }
 });
 
+app.get("/get-news", async (req, res) => {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: "1hSQ5z7Zov9KDmYDbhZX87OYUvPNy_WG_gne-5G3TxTA",
+      range: "HVG.hu!A2:G11",
+    });
+
+    res.json(response.data.values);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error fetching data");
+  }
+});
+
 app.listen(3000, () => {
   console.log("Server running on port 3000");
 });

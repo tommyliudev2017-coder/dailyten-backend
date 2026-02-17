@@ -28,7 +28,7 @@ app.post("/add-data", async (req, res) => {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: "1hSQ5z7Zov9KDmYDbhZX87OYUvPNy_WG_gne-5G3TxTA",
-      range: "HVG.hu!A2:G",
+      range: "HVG.hu!A2:G11",
       valueInputOption: "RAW",
       resource: {
         values: [[name, score]],
@@ -50,7 +50,7 @@ app.get("/get-news", async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: "1hSQ5z7Zov9KDmYDbhZX87OYUvPNy_WG_gne-5G3TxTA",
-      range: "HVG.hu!A2:G",
+      range: "HVG.hu!A2:G11",
     });
 
     res.json(response.data.values || []);

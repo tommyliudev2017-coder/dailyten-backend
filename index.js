@@ -1,16 +1,28 @@
 const express = require("express");
 const { google } = require("googleapis");
 const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Parse service account
-const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+// ================= API KEY =================
+const API_KEY = process.env.API_KEY;
 
-// Fix newline issue
+function verifyApiKey(req, res, next) {
+  const clientKey = req.headers["x-api-key"];
+
+  if (!clientKey || clientKey !== API_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  next();
+}
+
+// ================= GOOGLE AUTH =================
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
 serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
 
 const auth = new google.auth.GoogleAuth({
@@ -18,8 +30,8 @@ const auth = new google.auth.GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-// ----------- ADD DATA -----------
-app.post("/add-data", async (req, res) => {
+// ================= ADD DATA =================
+app.post("/add-data", verifyApiKey, async (req, res) => {
   try {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: "v4", auth: client });
@@ -42,8 +54,8 @@ app.post("/add-data", async (req, res) => {
   }
 });
 
-// ----------- GET NEWS -----------
-app.get("/get-news", async (req, res) => {
+// ================= GET NEWS =================
+app.get("/get-news", verifyApiKey, async (req, res) => {
   try {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: "v4", auth: client });
@@ -60,18 +72,8 @@ app.get("/get-news", async (req, res) => {
   }
 });
 
-// ----------- START SERVER -----------
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-const axios = require("axios");
-
-// ----------- PROXY IMAGE -----------
-app.get("/proxy-image", async (req, res) => {
+// ================= PROXY IMAGE =================
+app.get("/proxy-image", verifyApiKey, async (req, res) => {
   try {
     const imageUrl = req.query.url;
 
@@ -98,4 +100,11 @@ app.get("/proxy-image", async (req, res) => {
     console.error("Proxy image error:", error.message);
     res.status(500).send("Failed to fetch image");
   }
+});
+
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

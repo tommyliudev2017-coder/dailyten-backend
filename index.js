@@ -55,17 +55,39 @@ app.post("/add-data", verifyApiKey, async (req, res) => {
 });
 
 // ================= GET NEWS =================
+// 1. Move Auth OUTSIDE the route so it only happens ONCE when server starts
+let sheets;
+async function initializeSheets() {
+  const client = await auth.getClient();
+  sheets = google.sheets({ version: "v4", auth: client });
+  console.log("Google Sheets API Ready");
+}
+initializeSheets();
+
+// 2. Simple In-Memory Cache
+let newsCache = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 app.get("/get-news", verifyApiKey, async (req, res) => {
   try {
-    const client = await auth.getClient();
-    const sheets = google.sheets({ version: "v4", auth: client });
+    const now = Date.now();
+    
+    // Serve from cache if available and not expired
+    if (newsCache && (now - lastFetchTime < CACHE_DURATION)) {
+      return res.json(newsCache);
+    }
 
+    // Fetch only if cache is empty or old
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: "1hSQ5z7Zov9KDmYDbhZX87OYUvPNy_WG_gne-5G3TxTA",
       range: "HVG.hu!A2:G11",
     });
 
-    res.json(response.data.values || []);
+    newsCache = response.data.values || [];
+    lastFetchTime = now;
+
+    res.json(newsCache);
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching data");
